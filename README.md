@@ -1,5 +1,7 @@
 # Inventory Manager — Frontend
 
+> **Note:** This project was built as a study in [vibe coding](https://en.wikipedia.org/wiki/Vibe_coding) with [Claude Code](https://claude.ai/code). The entire codebase — from architecture decisions to component implementation — was developed through natural-language conversation with an AI pair programmer.
+
 A React 19 + TypeScript single-page application for digitalizing and automating inventory control. The system replaces a manual, paper-based workflow by tracking product stock across multiple e-commerce sub-accounts, registering purchase entries (_notas fiscais_) and sale exits (_baixas_), and providing real-time visibility with a full movement history.
 
 ---
