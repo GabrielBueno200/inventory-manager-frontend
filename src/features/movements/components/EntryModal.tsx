@@ -8,11 +8,13 @@ interface EntryModalProps {
   productId: string
   open: boolean
   onOpenChange: (open: boolean) => void
+  onSuccess?: () => void
 }
 
-export function EntryModal({ productId, open, onOpenChange }: EntryModalProps) {
+export function EntryModal({ productId, open, onOpenChange, onSuccess }: EntryModalProps) {
   function handleSuccess() {
     onOpenChange(false)
+    onSuccess?.()
   }
 
   const { form, handleSubmit } = useEntryForm(productId, handleSuccess)

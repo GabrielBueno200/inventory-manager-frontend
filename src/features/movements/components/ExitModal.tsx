@@ -13,16 +13,17 @@ interface ExitModalProps {
   productId: string
   open: boolean
   onOpenChange: (open: boolean) => void
+  onSuccess?: () => void
 }
 
-export function ExitModal({ productId, open, onOpenChange }: ExitModalProps) {
+export function ExitModal({ productId, open, onOpenChange, onSuccess }: ExitModalProps) {
   const accounts = useAccountStore((s) => s.accounts)
   const getStateConfig = useParameterStore((s) => s.getStateConfig)
 
-  const { form, preview, handlePreview, handleConfirm, handleBack } = useExitForm(
-    productId,
-    () => onOpenChange(false),
-  )
+  const { form, preview, handlePreview, handleConfirm, handleBack } = useExitForm(productId, () => {
+    onOpenChange(false)
+    onSuccess?.()
+  })
 
   const { register, control, formState: { errors } } = form
   const accountOptions = accounts.map((a) => ({ value: a.id, label: a.name }))

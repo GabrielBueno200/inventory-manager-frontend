@@ -44,6 +44,11 @@ function ExistingProductPage({ productId }: { productId: string }) {
   const [tab, setTab] = useState<Tab>(searchParams.get('tab') === 'movements' ? 'movements' : 'general')
   const [entryOpen, setEntryOpen] = useState(false)
   const [exitOpen, setExitOpen] = useState(false)
+  const [movementsRefreshKey, setMovementsRefreshKey] = useState(0)
+
+  function handleMovementSaved() {
+    setMovementsRefreshKey((k) => k + 1)
+  }
   const { form, handleSubmit, handleRemove } = useProductForm(product)
 
   useEffect(() => {
@@ -108,12 +113,12 @@ function ExistingProductPage({ productId }: { productId: string }) {
             product={product}
           />
         ) : (
-          <MovementsTable productId={product.id} />
+          <MovementsTable productId={product.id} refreshTrigger={movementsRefreshKey} />
         )}
       </div>
 
-      <EntryModal productId={product.id} open={entryOpen} onOpenChange={setEntryOpen} />
-      <ExitModal productId={product.id} open={exitOpen} onOpenChange={setExitOpen} />
+      <EntryModal productId={product.id} open={entryOpen} onOpenChange={setEntryOpen} onSuccess={handleMovementSaved} />
+      <ExitModal productId={product.id} open={exitOpen} onOpenChange={setExitOpen} onSuccess={handleMovementSaved} />
     </div>
   )
 }

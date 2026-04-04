@@ -16,6 +16,7 @@ const TYPE_OPTIONS = [
 
 interface MovementsTableProps {
   productId: string
+  refreshTrigger?: number
 }
 
 interface SortIndicatorProps {
@@ -31,13 +32,13 @@ function SortIndicator({ field, activeSortBy, sortOrder }: SortIndicatorProps) {
     : <ChevronDown size={13} />
 }
 
-export function MovementsTable({ productId }: MovementsTableProps) {
+export function MovementsTable({ productId, refreshTrigger = 0 }: MovementsTableProps) {
   const {
     movements, resultingQuantities,
     total, page, setPage, totalPages,
     sortBy, sortOrder, handleSort,
     from, setFrom, to, setTo, type, setType, accountId, setAccountId,
-  } = useMovements(productId)
+  } = useMovements(productId, refreshTrigger)
   const accounts = useAccountStore((s) => s.accounts)
 
   const accountOptions = [
@@ -150,9 +151,10 @@ export function MovementsTable({ productId }: MovementsTableProps) {
               </tbody>
             </table>
           </div>
-          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
         </>
       )}
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   )
 }

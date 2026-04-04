@@ -5,17 +5,17 @@ import type { Movement, MovementType, MovementSortBy, SortOrder } from '@/types'
 
 const PAGE_SIZE = 10
 
-export function useMovements(productId: string) {
+export function useMovements(productId: string, refreshTrigger = 0) {
   const productQuantity = useProductStore(
     (s) => s.products.find((p) => p.id === productId)?.quantity ?? 0,
   )
 
-  const today = new Date()
-  const thirtyDaysAgo = new Date(today)
-  thirtyDaysAgo.setDate(today.getDate() - 30)
+  const now = new Date()
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
 
-  const [from, setFrom] = useState(thirtyDaysAgo.toISOString().slice(0, 10))
-  const [to, setTo] = useState(today.toISOString().slice(0, 10))
+  const [from, setFrom] = useState(firstDay.toISOString().slice(0, 10))
+  const [to, setTo] = useState(lastDay.toISOString().slice(0, 10))
   const [type, setType] = useState<MovementType | 'all'>('all')
   const [accountId, setAccountId] = useState<string>('all')
   const [sortBy, setSortBy] = useState<MovementSortBy>('createdAt')
@@ -53,10 +53,10 @@ export function useMovements(productId: string) {
       page,
       pageSize: PAGE_SIZE,
     })
-    setMovements(result.items)
+    setMovements(result.data)
     setTotal(result.total)
     setTotalPages(result.totalPages)
-  }, [productId, from, to, type, accountId, sortBy, sortOrder, page])
+  }, [productId, from, to, type, accountId, sortBy, sortOrder, page, refreshTrigger])
 
   useEffect(() => {
     fetchMovements()
