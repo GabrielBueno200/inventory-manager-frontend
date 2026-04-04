@@ -1,29 +1,24 @@
 import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMovementStore } from '@/store/useMovementStore'
 import { useProductStore } from '@/store/useProductStore'
+import { productsService } from '@/services/products'
 import { entrySchema, type EntryFormValues } from '../schemas'
 
 export function useEntryForm(productId: string, onSuccess: () => void) {
-  const addMovement = useMovementStore((s) => s.addMovement)
-  const adjustQuantity = useProductStore((s) => s.adjustQuantity)
-  const updateProduct = useProductStore((s) => s.updateProduct)
+  const setProduct = useProductStore((s) => s.setProduct)
 
   const form = useForm<EntryFormValues>({
     resolver: zodResolver(entrySchema) as Resolver<EntryFormValues>,
     defaultValues: { quantity: 1, notes: '' },
   })
 
-  function handleSubmit(values: EntryFormValues) {
-    addMovement({
-      productId,
-      accountId: 'manual',
-      type: 'entry',
+  async function handleSubmit(values: EntryFormValues) {
+    await productsService.registerEntry(productId, {
       quantity: values.quantity,
-      notes: values.notes,
+      notes: values.notes || null,
     })
-    adjustQuantity(productId, values.quantity)
-    updateProduct(productId, { lastEntryAt: new Date().toISOString() })
+    const updated = await productsService.getById(productId)
+    setProduct(updated)
     form.reset()
     onSuccess()
   }

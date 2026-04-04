@@ -1,16 +1,22 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useAccountStore } from '@/store/useAccountStore'
+import { accountsService } from '@/services/accounts'
 import { accountSchema, type AccountFormValues } from '../schemas'
 import type { Account } from '@/types'
 
 export function useAccountForm() {
-  const addAccount = useAccountStore((s) => s.addAccount)
-  const updateAccount = useAccountStore((s) => s.updateAccount)
-  const removeAccount = useAccountStore((s) => s.removeAccount)
+  const { accounts, isLoaded, setAccounts, addAccount, updateAccount, removeAccount } =
+    useAccountStore()
   const [editing, setEditing] = useState<Account | null>(null)
   const [isOpen, setIsOpen] = useState(false)
+
+  useEffect(() => {
+    if (!isLoaded) {
+      accountsService.getAll().then(setAccounts)
+    }
+  }, [isLoaded, setAccounts])
 
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(accountSchema),
@@ -29,22 +35,26 @@ export function useAccountForm() {
     setIsOpen(true)
   }
 
-  function handleSubmit(values: AccountFormValues) {
+  async function handleSubmit(values: AccountFormValues) {
     if (editing) {
-      updateAccount(editing.id, values)
+      const updated = await accountsService.update(editing.id, values)
+      updateAccount(updated)
     } else {
-      addAccount(values)
+      const created = await accountsService.create(values)
+      addAccount(created)
     }
     setIsOpen(false)
     form.reset()
     setEditing(null)
   }
 
-  function handleRemove(id: string) {
+  async function handleRemove(id: string) {
+    await accountsService.remove(id)
     removeAccount(id)
   }
 
   return {
+    accounts,
     form,
     isOpen,
     setIsOpen,

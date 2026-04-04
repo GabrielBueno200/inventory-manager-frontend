@@ -1,25 +1,27 @@
 import { create } from 'zustand'
-import { mockAccounts } from '@/mocks/data'
 import type { Account } from '@/types'
 
 interface AccountStore {
   accounts: Account[]
-  addAccount: (account: Omit<Account, 'id'>) => void
-  updateAccount: (id: string, data: Partial<Omit<Account, 'id'>>) => void
+  isLoaded: boolean
+  setAccounts: (accounts: Account[]) => void
+  addAccount: (account: Account) => void
+  updateAccount: (account: Account) => void
   removeAccount: (id: string) => void
 }
 
 export const useAccountStore = create<AccountStore>((set) => ({
-  accounts: mockAccounts,
+  accounts: [],
+  isLoaded: false,
+
+  setAccounts: (accounts) => set({ accounts, isLoaded: true }),
 
   addAccount: (account) =>
-    set((state) => ({
-      accounts: [...state.accounts, { ...account, id: `acc-${Date.now()}` }],
-    })),
+    set((state) => ({ accounts: [...state.accounts, account] })),
 
-  updateAccount: (id, data) =>
+  updateAccount: (account) =>
     set((state) => ({
-      accounts: state.accounts.map((a) => (a.id === id ? { ...a, ...data } : a)),
+      accounts: state.accounts.map((a) => (a.id === account.id ? account : a)),
     })),
 
   removeAccount: (id) =>

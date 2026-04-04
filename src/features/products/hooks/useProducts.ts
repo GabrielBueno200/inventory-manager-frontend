@@ -1,46 +1,48 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useProductStore } from '@/store/useProductStore'
-import { useParameterStore } from '@/store/useParameterStore'
-import { getStockState } from '@/utils/stock'
+import { productsService } from '@/services/products'
 import type { StockState } from '@/types'
 
 export function useProducts() {
+  const setProducts = useProductStore((s) => s.setProducts)
   const products = useProductStore((s) => s.products)
-  const thresholds = useParameterStore((s) => s.thresholds)
   const [search, setSearch] = useState('')
   const [stateFilter, setStateFilter] = useState<StockState | 'all' | 'negative'>('all')
   const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [isLoading, setIsLoading] = useState(false)
   const pageSize = 10
 
-  const filtered = useMemo(() => {
-    return products.filter((p) => {
-      const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase())
-      let matchesState: boolean
-      if (stateFilter === 'all') {
-        matchesState = true
-      } else if (stateFilter === 'negative') {
-        matchesState = p.quantity < 0
-      } else {
-        matchesState = getStockState(p.quantity, thresholds) === stateFilter
-      }
-      return matchesSearch && matchesState
-    })
-  }, [products, search, stateFilter, thresholds])
+  const fetchProducts = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const result = await productsService.getAll({
+        search: search || undefined,
+        state: stateFilter !== 'all' ? stateFilter : undefined,
+        page,
+        pageSize,
+      })
+      setProducts(result.items)
+      setTotalPages(result.totalPages)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [search, stateFilter, page, pageSize, setProducts])
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
-  const paginated = filtered.slice((page - 1) * pageSize, page * pageSize)
+  useEffect(() => {
+    fetchProducts()
+  }, [fetchProducts])
 
   return {
-    products: paginated,
+    products,
+    isLoading,
     search,
-    setSearch,
+    setSearch: (v: string) => { setSearch(v); setPage(1) },
     stateFilter,
-    setStateFilter: (v: StockState | 'all' | 'negative') => {
-      setStateFilter(v)
-      setPage(1)
-    },
+    setStateFilter: (v: StockState | 'all' | 'negative') => { setStateFilter(v); setPage(1) },
     page,
     setPage,
     totalPages,
+    refetch: fetchProducts,
   }
 }

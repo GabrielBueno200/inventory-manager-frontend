@@ -1,12 +1,11 @@
-import { useMemo, useState } from 'react'
-import { useMovementStore } from '@/store/useMovementStore'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 import { useProductStore } from '@/store/useProductStore'
-import type { MovementType, MovementSortBy, SortOrder } from '@/types'
+import { productsService } from '@/services/products'
+import type { Movement, MovementType, MovementSortBy, SortOrder } from '@/types'
 
 const PAGE_SIZE = 10
 
 export function useMovements(productId: string) {
-  const getProductMovements = useMovementStore((s) => s.getProductMovements)
   const productQuantity = useProductStore(
     (s) => s.products.find((p) => p.id === productId)?.quantity ?? 0,
   )
@@ -22,9 +21,15 @@ export function useMovements(productId: string) {
   const [sortBy, setSortBy] = useState<MovementSortBy>('createdAt')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
   const [page, setPage] = useState(1)
+  const [movements, setMovements] = useState<Movement[]>([])
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
 
   function handleFilterChange<T>(setter: (v: T) => void) {
-    return (v: T) => { setter(v); setPage(1) }
+    return (v: T) => {
+      setter(v)
+      setPage(1)
+    }
   }
 
   function handleSort(field: MovementSortBy) {
@@ -37,25 +42,38 @@ export function useMovements(productId: string) {
     setPage(1)
   }
 
-  const allFilteredMovements = getProductMovements(productId, { from, to, type, accountId, sortBy, sortOrder })
-  const total = allFilteredMovements.length
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
-  const movements = allFilteredMovements.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const fetchMovements = useCallback(async () => {
+    const result = await productsService.getMovements(productId, {
+      from: from ? new Date(from).toISOString() : undefined,
+      to: to ? new Date(`${to}T23:59:59`).toISOString() : undefined,
+      type: type !== 'all' ? type : undefined,
+      accountId: accountId !== 'all' ? accountId : undefined,
+      sortBy,
+      sortOrder,
+      page,
+      pageSize: PAGE_SIZE,
+    })
+    setMovements(result.items)
+    setTotal(result.total)
+    setTotalPages(result.totalPages)
+  }, [productId, from, to, type, accountId, sortBy, sortOrder, page])
 
-  // Compute resulting stock quantity after each movement.
-  // allMovements is always sorted createdAt desc; we walk newest→oldest,
-  // starting at the current product quantity and undoing each movement.
-  const allMovements = getProductMovements(productId)
+  useEffect(() => {
+    fetchMovements()
+  }, [fetchMovements])
+
+  // Compute resulting stock quantity for movements on the current page.
+  // Walking newest→oldest from the current product quantity.
   const resultingQuantities = useMemo(() => {
     const map: Record<string, number> = {}
     let running = productQuantity
-    for (const mov of allMovements) {
+    for (const mov of movements) {
       map[mov.id] = running
       if (mov.type === 'entry') running -= mov.quantity
       else running += mov.quantity
     }
     return map
-  }, [allMovements, productQuantity])
+  }, [movements, productQuantity])
 
   return {
     movements,

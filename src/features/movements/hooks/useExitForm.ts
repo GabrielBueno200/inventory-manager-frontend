@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMovementStore } from '@/store/useMovementStore'
 import { useProductStore } from '@/store/useProductStore'
 import { useParameterStore } from '@/store/useParameterStore'
+import { productsService } from '@/services/products'
 import { getStockState } from '@/utils/stock'
 import { exitSchema, type ExitFormValues } from '../schemas'
 import type { StockState } from '@/types'
@@ -15,9 +15,7 @@ interface ExitPreview {
 }
 
 export function useExitForm(productId: string, onSuccess: () => void) {
-  const addMovement = useMovementStore((s) => s.addMovement)
-  const adjustQuantity = useProductStore((s) => s.adjustQuantity)
-  const updateProduct = useProductStore((s) => s.updateProduct)
+  const setProduct = useProductStore((s) => s.setProduct)
   const product = useProductStore((s) => s.products.find((p) => p.id === productId))
   const thresholds = useParameterStore((s) => s.thresholds)
   const [preview, setPreview] = useState<ExitPreview | null>(null)
@@ -41,16 +39,14 @@ export function useExitForm(productId: string, onSuccess: () => void) {
     setPreview(buildPreview(values))
   }
 
-  function handleConfirm(values: ExitFormValues) {
-    addMovement({
-      productId,
+  async function handleConfirm(values: ExitFormValues) {
+    await productsService.registerExit(productId, {
       accountId: values.accountId,
-      type: 'exit',
       quantity: values.quantity,
-      notes: values.notes,
+      notes: values.notes || null,
     })
-    adjustQuantity(productId, -values.quantity)
-    updateProduct(productId, { lastExitAt: new Date().toISOString() })
+    const updated = await productsService.getById(productId)
+    setProduct(updated)
     form.reset()
     setPreview(null)
     onSuccess()

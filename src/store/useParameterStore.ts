@@ -1,12 +1,13 @@
 import { create } from 'zustand'
-import { mockParameters } from '@/mocks/data'
 import type { StockParameter, StockParameterId, StockState } from '@/types'
 import type { StockThresholds } from '@/utils/stock'
 
 interface ParameterStore {
   parameters: StockParameter[]
+  isLoaded: boolean
   thresholds: StockThresholds
-  updateParameter: (id: StockParameterId, data: Partial<Pick<StockParameter, 'value' | 'color'>>) => void
+  setParameters: (parameters: StockParameter[]) => void
+  updateParameter: (parameter: StockParameter) => void
   getStateConfig: (state: StockState) => { color: string; label: string }
 }
 
@@ -17,12 +18,18 @@ function computeThresholds(params: StockParameter[]): StockThresholds {
 }
 
 export const useParameterStore = create<ParameterStore>((set, get) => ({
-  parameters: mockParameters,
-  thresholds: computeThresholds(mockParameters),
+  parameters: [],
+  isLoaded: false,
+  thresholds: { normal: 20, medium: 10 },
 
-  updateParameter: (id, data) =>
+  setParameters: (parameters) =>
+    set({ parameters, isLoaded: true, thresholds: computeThresholds(parameters) }),
+
+  updateParameter: (parameter) =>
     set((state) => {
-      const updated = state.parameters.map((p) => (p.id === id ? { ...p, ...data } : p))
+      const updated = state.parameters.map((p) =>
+        p.id === parameter.id ? parameter : p,
+      )
       return { parameters: updated, thresholds: computeThresholds(updated) }
     }),
 

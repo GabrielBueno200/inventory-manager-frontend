@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Navigate, useSearchParams, useNavigate } from 'react-router-dom'
 import { TrendingUp, TrendingDown, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -8,6 +8,7 @@ import { EntryModal } from '@/features/movements/components/EntryModal'
 import { ExitModal } from '@/features/movements/components/ExitModal'
 import { useProductForm } from '@/features/products/hooks/useProductForm'
 import { useProductStore } from '@/store/useProductStore'
+import { productsService } from '@/services/products'
 import { clsx } from 'clsx'
 
 type Tab = 'general' | 'movements'
@@ -36,14 +37,25 @@ function NewProductPage() {
 
 function ExistingProductPage({ productId }: { productId: string }) {
   const navigate = useNavigate()
+  const setProduct = useProductStore((s) => s.setProduct)
   const product = useProductStore((s) => s.products.find((p) => p.id === productId))
+  const [notFound, setNotFound] = useState(false)
   const [searchParams] = useSearchParams()
   const [tab, setTab] = useState<Tab>(searchParams.get('tab') === 'movements' ? 'movements' : 'general')
   const [entryOpen, setEntryOpen] = useState(false)
   const [exitOpen, setExitOpen] = useState(false)
   const { form, handleSubmit, handleRemove } = useProductForm(product)
 
-  if (!product) return <Navigate to="/products" replace />
+  useEffect(() => {
+    if (!product) {
+      productsService.getById(productId)
+        .then(setProduct)
+        .catch(() => setNotFound(true))
+    }
+  }, [productId, product, setProduct])
+
+  if (notFound) return <Navigate to="/products" replace />
+  if (!product) return null
 
   return (
     <div className="flex flex-col gap-6">

@@ -2,12 +2,12 @@ import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
 import { useProductStore } from '@/store/useProductStore'
+import { productsService } from '@/services/products'
 import { productSchema, type ProductFormValues } from '../schemas'
 import type { Product } from '@/types'
 
 export function useProductForm(product?: Product) {
-  const addProduct = useProductStore((s) => s.addProduct)
-  const updateProduct = useProductStore((s) => s.updateProduct)
+  const setProduct = useProductStore((s) => s.setProduct)
   const removeProduct = useProductStore((s) => s.removeProduct)
   const navigate = useNavigate()
 
@@ -26,17 +26,21 @@ export function useProductForm(product?: Product) {
         },
   })
 
-  function handleSubmit(values: ProductFormValues) {
+  async function handleSubmit(values: ProductFormValues) {
+    const data = { ...values, description: values.description ?? '' }
     if (product) {
-      updateProduct(product.id, values)
+      const updated = await productsService.update(product.id, data)
+      setProduct(updated)
     } else {
-      addProduct({ ...values, quantity: 0, description: values.description ?? '' })
+      const created = await productsService.create(data)
+      setProduct(created)
     }
     navigate('/products')
   }
 
-  function handleRemove() {
+  async function handleRemove() {
     if (product) {
+      await productsService.remove(product.id)
       removeProduct(product.id)
       navigate('/products')
     }
