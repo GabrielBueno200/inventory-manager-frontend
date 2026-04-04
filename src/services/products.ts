@@ -2,7 +2,7 @@ import { api } from './api'
 import type { Product, Movement } from '@/types'
 
 export interface PagedResult<T> {
-  items: T[]
+  data: T[]
   total: number
   page: number
   pageSize: number

@@ -22,7 +22,7 @@ export function useProducts() {
         page,
         pageSize,
       })
-      setProducts(result.items)
+      setProducts(result.data)
       setTotalPages(result.totalPages)
     } finally {
       setIsLoading(false)
